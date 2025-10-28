@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-RescateFaunaApplication<rescate-fauna>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.uade.tpo.rescate_fauna.RescateFaunaApplication",
+            "projectName": "rescate-fauna",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}
