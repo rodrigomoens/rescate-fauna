@@ -1,42 +1,54 @@
 package com.uade.tpo.rescate_fauna.services;
-import com.uade.tpo.rescate_fauna.repository.UserRepository;
+
 import java.util.Optional;
-import com.uade.tpo.rescate_fauna.entity.*;
 
-import java.util.List;
-
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import com.uade.tpo.rescate_fauna.entity.User;
+import com.uade.tpo.rescate_fauna.repository.UserRepository;
 
 @Service
 public class UserService {
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
-    public List<User> getAllUsers(){
-        return userRepository.findAll();
+    public User createUser(User user){
+        if (user.getNombre() == null || user.getApellido() == null || user.getEmail() == null || user.getPassword() == null) {
+            throw new IllegalArgumentException("Faltan datos obligatorios para el registro del usuario.");
+        }
+
+        Optional<User> existing = userRepository.findByEmail(user.getEmail());
+        if (existing.isPresent()) {
+            throw new IllegalArgumentException("El email ya está registrado.");
+        }
+
+        // Hash password
+        String hashed = passwordEncoder.encode(user.getPassword());
+        user.setPassword(hashed);
+
+        User saved = userRepository.save(user);
+        // Do not return the password
+        //saved.setPassword(null);
+        return saved;
     }
 
-    public Optional<User> getUserById(String id) {
-        return userRepository.findById(id);
-    }
+        public User authenticate(String email, String rawPassword) {
+            Optional<User> existing = userRepository.findByEmail(email);
+            if (existing.isEmpty()) {
+                throw new IllegalArgumentException("Credenciales inválidas.");
+            }
+            User found = existing.get();
+            if (!passwordEncoder.matches(rawPassword, found.getPassword())) {
+                throw new IllegalArgumentException("Credenciales inválidas.");
+            }
+            // Do not expose password
+            found.setPassword(null);
+            return found;
+        }
 
-    public User createUser(User user) {
-        return userRepository.save(user);
-    }
-
-    public User updateUser(String id, User userDetails) {
-        return userRepository.findById(id)
-                .map(user -> {
-                    user.setEmail(userDetails.getEmail());
-                    user.setPassword(userDetails.getPassword());
-                    user.setNombre(userDetails.getNombre());
-                    user.setApellido(userDetails.getApellido());
-                    user.setRol(userDetails.getRol());
-                    return userRepository.save(user);
-                })
-                .orElseThrow(() -> new RuntimeException("User no encontrado con id " + id));
-    }
 }
